@@ -1,0 +1,28 @@
+.perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .transform-style-preserve-3d {
+    transform-style: preserve-3d;
+  }
+  
+  /* Smooth transitions for form elements */
+  .form-element {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  /* Custom focus styles */
+  input:focus, button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(128, 0, 128, 0.5); /* Equivalent to a purple ring */
+  }
+  
+  /* Animation for error messages */
+  .error-message {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
