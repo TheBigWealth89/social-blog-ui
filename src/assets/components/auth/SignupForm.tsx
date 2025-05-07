@@ -1,19 +1,38 @@
-// components/auth/SignupForm.tsx
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { FaUser, FaLock } from "react-icons/fa";
 import { FiMail, FiImage } from "react-icons/fi";
 import authServices from "../../services/authServices";
-import { useState } from "react";
-
 interface SignupFormProps {
   onFlip: () => void;
 }
-
 export const SignupForm = ({ onFlip }: SignupFormProps) => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [successful, setSuccessful] = useState(false);
+  const [message, setMessage] = useState("");
+  const [formErrors, setFormErrors] = useState<{
+    username?: string;
+    email?: string;
+    password?: string;
+    terms?: string;
+  }>({});
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const onChangeUsername = (e: React.FormEvent) => {
+    const username = (e.target as HTMLInputElement).value;
+    setUsername(username);
+  };
+
+  const onChangeEmail = (e: React.FormEvent) => {
+    const email = (e.target as HTMLInputElement).value;
+    setEmail(email);
+  };
+  const onChangePassword = (e: React.FormEvent) => {
+    const password = (e.target as HTMLInputElement).value;
+    setPassword(password);
+  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -21,9 +40,48 @@ export const SignupForm = ({ onFlip }: SignupFormProps) => {
     }
   };
 
+  const handleTermsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTermsAccepted(e.target.checked);
+  };
+
+  //Handler submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage("");
+    setSuccessful(true);
+
+    // Client-side validation
+    const errors: {
+      username?: string;
+      email?: string;
+      password?: string;
+      terms?: string;
+    } = {};
+    if (!username.trim()) {
+      errors.username = "Username is required.";
+    }
+    if (!email.trim()) {
+      errors.email = "Email is required.";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = "Invalid email format.";
+    }
+    if (!password.trim()) {
+      errors.password = "Password is required.";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters.";
+    }
+    if (!termsAccepted) {
+      errors.terms = "You must accept the Terms and Privacy Policy.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setSuccessful(false);
+      return;
+    }
+
     try {
+      setFormErrors({}); // Clear old field errors
       let profilePictureString = "";
       if (profilePicture) {
         const reader = new FileReader();
@@ -41,7 +99,23 @@ export const SignupForm = ({ onFlip }: SignupFormProps) => {
       );
       console.log("Signup successful:", response);
     } catch (error) {
-      console.error("Signup failed:", error);
+      const resData = (error as any)?.response?.data;
+
+      if (resData?.errors) {
+        // structured field errors
+        setFormErrors({
+          username: resData.errors.username,
+          email: resData.errors.email,
+          password: resData.errors.password,
+        });
+      } else if (resData?.error) {
+        // general single error (non-field-specific)
+        setMessage(resData.error);
+      } else {
+        setMessage("Something went wrong!");
+      }
+
+      setSuccessful(false);
     }
   };
 
@@ -77,11 +151,17 @@ export const SignupForm = ({ onFlip }: SignupFormProps) => {
               id="signup-username"
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              onChange={onChangeUsername}
+              className={`pl-10 w-full px-4 py-3 rounded-lg border ${
+                formErrors.username ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
               placeholder="cooluser123"
             />
           </div>
+
+          {formErrors.username && (
+            <p className="text-red-500 text-sm mt-1">{formErrors.username}</p>
+          )}
         </motion.div>
 
         <motion.div
@@ -103,11 +183,17 @@ export const SignupForm = ({ onFlip }: SignupFormProps) => {
               id="signup-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              onChange={onChangeEmail}
+              className={`pl-10 w-full px-4 py-3 rounded-lg border ${
+                formErrors.email ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
               placeholder="email@example.com"
             />
           </div>
+
+          {formErrors.email && (
+            <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+          )}
         </motion.div>
 
         <motion.div
@@ -129,11 +215,17 @@ export const SignupForm = ({ onFlip }: SignupFormProps) => {
               id="signup-password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              onChange={onChangePassword}
+              className={`pl-10 w-full px-4 py-3 rounded-lg border ${
+                formErrors.password ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
               placeholder="••••••••"
             />
           </div>
+
+          {formErrors.password && (
+            <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
+          )}
         </motion.div>
 
         <motion.div
@@ -190,6 +282,8 @@ export const SignupForm = ({ onFlip }: SignupFormProps) => {
             id="terms"
             type="checkbox"
             className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            checked={termsAccepted}
+            onChange={handleTermsChange}
           />
           <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
             I agree to the{" "}
@@ -202,6 +296,9 @@ export const SignupForm = ({ onFlip }: SignupFormProps) => {
             </a>
           </label>
         </motion.div>
+        {formErrors.terms && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.terms}</p>
+        )}
 
         <motion.button
           initial={{ opacity: 0, y: 10 }}
@@ -212,6 +309,21 @@ export const SignupForm = ({ onFlip }: SignupFormProps) => {
         >
           Sign Up
         </motion.button>
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className={`mt-4 p-3 rounded-lg text-center ${
+              successful
+                ? "bg-green-100 text-green-700 border border-green-400"
+                : "bg-red-100 text-red-700 border border-red-400"
+            }`}
+            role="alert"
+          >
+            {message}
+          </motion.div>
+        )}
       </form>
 
       <div className="mt-6 text-center">

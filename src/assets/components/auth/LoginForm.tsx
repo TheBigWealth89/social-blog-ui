@@ -12,16 +12,71 @@ interface LoginFormProps {
 export const LoginForm = ({ onFlip }: LoginFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate(); 
+  const [formErrors, setFormErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
+  const [message, setMessage] = useState("");
+  const [successful, setSuccessful] = useState(false);
+  const navigate = useNavigate();
+
+  const onChangeEmail = (e: React.FormEvent) => {
+    const email = (e.target as HTMLInputElement).value;
+    setEmail(email);
+  };
+  const onChangePassword = (e: React.FormEvent) => {
+    const password = (e.target as HTMLInputElement).value;
+    setPassword(password);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage("");
+    setFormErrors({});
+    
+    // Client-side validation
+    const errors: { email?: string; password?: string } = {};
+    if (!email.trim()) {
+      errors.email = "Email is required.";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = "Invalid email format.";
+    }
+    if (!password.trim()) {
+      errors.password = "Password is required.";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters.";
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setSuccessful(false);
+      return;
+    }
+    
     try {
+      setSuccessful(true); //Clear form error 
       const response = await AuthServices.login(email, password);
       navigate("/homePage");
       console.log("Login successful:", response);
     } catch (error) {
       console.error("Login failed:", error);
+
+      const resData = (error as any)?.response?.data;
+
+      if (resData?.errors && typeof resData.errors === "object") {
+        // structured field errors
+        setFormErrors({
+          email: resData.errors.email,
+          password: resData.errors.password,
+        });
+      } else if (resData?.error) {
+        // general single error (non-field-specific)
+        setMessage(resData.error);
+      } else {
+        setMessage("Something went wrong!");
+      }
+
+      setSuccessful(false);
     }
   };
 
@@ -57,11 +112,16 @@ export const LoginForm = ({ onFlip }: LoginFormProps) => {
               id="login-identifier"
               type="text"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              onChange={onChangeEmail}
+              className={`pl-10 w-full px-4 py-3 rounded-lg border ${
+                formErrors.email ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
               placeholder="username or email@example.com"
             />
           </div>
+          {formErrors.email && (
+            <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+          )}
         </motion.div>
 
         <motion.div
@@ -83,11 +143,16 @@ export const LoginForm = ({ onFlip }: LoginFormProps) => {
               id="login-password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              onChange={onChangePassword}
+              className={`pl-10 w-full px-4 py-3 rounded-lg border ${
+                formErrors.password ? "border-red-500" : "border-gray-300"
+              } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
               placeholder="••••••••"
             />
           </div>
+          {formErrors.password && (
+            <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
+          )}
         </motion.div>
 
         <motion.div
@@ -126,6 +191,22 @@ export const LoginForm = ({ onFlip }: LoginFormProps) => {
         >
           Login
         </motion.button>
+
+        {message && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className={`mt-4 p-3 rounded-lg text-center ${
+              successful
+                ? "bg-green-100 text-green-700 border border-green-400"
+                : "bg-red-100 text-red-700 border border-red-400"
+            }`}
+            role="alert"
+          >
+            {message}
+          </motion.div>
+        )}
       </form>
 
       <div className="mt-6">
