@@ -1,8 +1,9 @@
 export interface User {
+    userId: any;
     id: string;
     username: string;
     email: string;
-    avatar?: string;
+    profilePicture?: string;
     bio?: string;
     website?: string;
     followersCount: number;

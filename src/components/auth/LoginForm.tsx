@@ -2,8 +2,9 @@
 import { motion } from "framer-motion";
 import { FaUser, FaLock } from "react-icons/fa";
 import { useState } from "react";
-import AuthServices from "../../services/authServices";
+import AuthServices from "../services/authServices";
 import { useNavigate } from "react-router-dom";
+import { setAccessToken } from "../services/authServices";
 
 interface LoginFormProps {
   onFlip: () => void;
@@ -33,7 +34,7 @@ export const LoginForm = ({ onFlip }: LoginFormProps) => {
     e.preventDefault();
     setMessage("");
     setFormErrors({});
-    
+
     // Client-side validation
     const errors: { email?: string; password?: string } = {};
     if (!email.trim()) {
@@ -46,31 +47,33 @@ export const LoginForm = ({ onFlip }: LoginFormProps) => {
     } else if (password.length < 6) {
       errors.password = "Password must be at least 6 characters.";
     }
-    
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       setSuccessful(false);
       return;
     }
-    
     try {
-      setSuccessful(true); //Clear form error 
       const response = await AuthServices.login(email, password);
-      navigate("/homePage");
-      console.log("Login successful:", response);
+      // Store access token
+      setAccessToken(response.accessToken);
+      // Store user data in localStorage
+      localStorage.setItem("user", JSON.stringify(response.user));
+      // Trigger a storage event for other tabs
+      window.dispatchEvent(new Event("storage"));
+      setSuccessful(true);
+      navigate("/");
     } catch (error) {
       console.error("Login failed:", error);
 
       const resData = (error as any)?.response?.data;
 
       if (resData?.errors && typeof resData.errors === "object") {
-        // structured field errors
         setFormErrors({
           email: resData.errors.email,
           password: resData.errors.password,
         });
       } else if (resData?.error) {
-        // general single error (non-field-specific)
         setMessage(resData.error);
       } else {
         setMessage("Something went wrong!");
@@ -88,7 +91,9 @@ export const LoginForm = ({ onFlip }: LoginFormProps) => {
         transition={{ delay: 0.2 }}
         className="text-center mb-8"
       >
-        <h2 className="text-3xl font-bold text-gray-800">Welcome Back</h2>
+        <h2 className="text-3xl font-semibold font-[inter] text-gray-800">
+          Welcome Back
+        </h2>
         <p className="text-gray-600 mt-2">Login to your account</p>
       </motion.div>
 

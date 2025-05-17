@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FaUser, FaLock } from "react-icons/fa";
 import { FiMail, FiImage } from "react-icons/fi";
-import authServices from "../../services/authServices";
+import authServices from "../services/authServices";
 interface SignupFormProps {
   onFlip: () => void;
 }
